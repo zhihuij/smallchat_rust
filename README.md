@@ -2,8 +2,11 @@
 
 Inspired by [antirez/smallchat][smallchat]
 
-## Description
+## Usage
 
+```shell
+cargo run
+```
 
 ## License
 
