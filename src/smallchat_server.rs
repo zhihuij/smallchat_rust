@@ -1,11 +1,14 @@
+mod chat_lib;
+
 use std::io::{Read, Write};
-use std::net::{Ipv4Addr, SocketAddr, IpAddr};
 use std::os::fd::AsRawFd;
 use std::{io, str};
 use std::collections::HashMap;
 use std::time::Duration;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
+use crate::chat_lib::{accept_client, create_tcp_server, socket_set_nonblock_nodelay,
+                      interrupted, would_block};
 
 /* ============================ Data structures ================================= */
 const MAX_CLIENTS: usize = 1000;
@@ -14,43 +17,6 @@ const SERVER_PORT: u16 = 7711;
 struct Client {
     stream: TcpStream,
     nick: String,
-}
-
-/* ======================== Low level networking stuff ========================== */
-/* Create a TCP socket listening to 'port' ready to accept connections. */
-fn create_tcp_server(port: u16) -> TcpListener {
-    let ip_addr = IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1));
-    let socket_addr = SocketAddr::new(ip_addr, port);
-
-    // SO_REUSEPORT is set by bind
-    let listener = TcpListener::bind(socket_addr).expect("Failed to bind to address");
-    println!("Smallchat server listening on tcp://{}", &socket_addr);
-    // TcpListener in mio is non-blocking as default
-    //listener.set_nonblocking(true).expect("Failed to set non-blocking mode");
-
-    listener
-}
-
-/* Set the specified socket in non-blocking mode, with no delay flag. */
-fn socket_set_nonblock_nodelay(stream: &TcpStream) {
-    // stream.set_nonblocking(true).expect("Cannot set non-blocking");
-    stream.set_nodelay(true).expect("Cannot set non-delay");
-}
-
-/* If there is a new connection ready to be accepted, we accept it
- * and return new client socket on success. */
-fn accept_client(tcp_listener: &TcpListener) -> Option<TcpStream> {
-    let accept_result = tcp_listener.accept();
-    match accept_result {
-        Ok((stream, _addr)) => { Some(stream) }
-        Err(err) if would_block(&err) => {
-            None
-        }
-        Err(err) => {
-            println!("Error while accept client: {err:?}");
-            None
-        }
-    }
 }
 
 /* ====================== Small chat core implementation ======================== */
@@ -77,14 +43,6 @@ fn send_msg_to_all_clients_but(clients_stream: &HashMap<Token, Client>, excluded
             stream.write(msg).expect("Failed write msg to client");
         }
     }
-}
-
-fn would_block(err: &io::Error) -> bool {
-    err.kind() == io::ErrorKind::WouldBlock
-}
-
-fn interrupted(err: &io::Error) -> bool {
-    err.kind() == io::ErrorKind::Interrupted
 }
 
 fn next(current: &mut Token) -> Token {

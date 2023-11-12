@@ -1,31 +1,11 @@
+mod chat_lib;
+
 use std::{env, io};
 use std::io::Read;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::process::exit;
-use std::str::FromStr;
 use std::time::Duration;
-use mio::net::TcpStream;
 use mio::{Events, Interest, Poll, Token};
-
-fn tcp_connect(host: &String, port: u16) -> Option<TcpStream> {
-    let ip_addr = IpAddr::V4(Ipv4Addr::from_str(host.as_str()).unwrap());
-    let server_addr = SocketAddr::new(ip_addr, port);
-
-    let server_stream = TcpStream::connect(server_addr);
-    match server_stream {
-        Ok(server_stream) => {
-            server_stream.set_nodelay(true).expect("Cannot set non-delay");
-            Some(server_stream)
-        }
-        Err(_) => {
-            None
-        }
-    }
-}
-
-fn would_block(err: &io::Error) -> bool {
-    err.kind() == io::ErrorKind::WouldBlock
-}
+use crate::chat_lib::{tcp_connect, would_block};
 
 const CLIENT: Token = Token(0);
 
