@@ -6,10 +6,14 @@ Inspired by [antirez/smallchat][smallchat].
 
 Run the server:
 ```shell
-cargo run smallchat_server
+cargo run --bin smallchat_server
 ```
 
 Connect to the server with the client(can't be run inside IDE):
+```shell
+cargo run --bin smallchat_client 127.0.0.1 7711
+```
+or
 ```shell
 ./smallchat_client 127.0.0.1 7711
 ```
