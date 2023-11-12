@@ -13,9 +13,14 @@ Connect to the server with the client(can't be run inside IDE):
 ```shell
 cargo run --bin smallchat_client 127.0.0.1 7711
 ```
-or
+then you can chat like in an IRC:
 ```shell
-./smallchat_client 127.0.0.1 7711
+Welcome to Simple Chat! Use /nick <nick> to set your nick.
+you> hello
+user:5> hi
+you> how are you?
+user:5> fine, it's cold~
+what' the whether like?
 ```
 
 ## History
