@@ -1,13 +1,18 @@
 [package]
 name = "smallchat_rust"
-version = "0.1.0"
+version = "0.0.3"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "smallchat"
-path = "src/smallchat.rs"
+name = "smallchat_server"
+path = "src/smallchat_server.rs"
+
+[[bin]]
+name = "smallchat_client"
+path = "src/smallchat_client.rs"
 
 [dependencies]
 mio = { version = "0.8", features = ["os-poll", "net"] }
+termion = "*"
