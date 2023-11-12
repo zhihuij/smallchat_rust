@@ -9,9 +9,9 @@ Run the server:
 cargo run smallchat_server
 ```
 
-Connect to the server with the client:
+Connect to the server with the client(can't be run inside IDE):
 ```shell
-cargo run smallchat_client 127.0.0.1 7711
+./smallchat_client 127.0.0.1 7711
 ```
 
 ## History
