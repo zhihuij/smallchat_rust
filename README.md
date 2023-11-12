@@ -11,7 +11,7 @@ cargo run smallchat_server
 
 Connect to the server with the client:
 ```shell
-cargo run smallchat_server 127.0.0.1 7711
+cargo run smallchat_client 127.0.0.1 7711
 ```
 
 ## History
