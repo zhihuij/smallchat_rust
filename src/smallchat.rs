@@ -177,10 +177,10 @@ fn main() -> io::Result<()> {
                                         }
                                         None
                                     } else {
-                                        let msg = &read_buf[..size];
-                                        println!("{} {:?}", client.nick, msg);
+                                        let mut msg_vec = format!("{}> ", client.nick).as_bytes().to_vec();
+                                        msg_vec.extend_from_slice(&read_buf[..size]);
 
-                                        Some(msg)
+                                        Some(msg_vec)
                                     }
                                 }
                                 Err(ref e) if would_block(e) => {
@@ -205,7 +205,7 @@ fn main() -> io::Result<()> {
                         None => {}
                         Some(msg) => {
                             if let Some(client) = clients.get(&token) {
-                                send_msg_to_all_clients_but(&clients, &client.stream, msg);
+                                send_msg_to_all_clients_but(&clients, &client.stream, msg.as_slice());
                             }
                         }
                     }
