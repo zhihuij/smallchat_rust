@@ -102,69 +102,49 @@ fn main() -> io::Result<()> {
                     }
                 },
                 token => {
-                    let mut read_buf = [0; 256];
-                    // Maybe received an event for a client
-                    let msg = if let Some(client) = clients.get_mut(&token) {
-                        if event.is_readable() {
-                            let mut client_stream = &client.stream;
-                            let nread = client_stream.read(&mut read_buf);
-                            match nread {
-                                Ok(0) => {
-                                    println!("Disconnected client(0) fd={}, nick={}", client_stream.as_raw_fd(), client.nick);
-                                    if let Some(mut client) = clients.remove(&token) {
-                                        poll.registry().deregister(&mut client.stream)?;
-                                    }
-                                    None
-                                }
-                                Ok(mut size) => {
-                                    if read_buf[0] == '/' as u8 {
-                                        if let Some(index) = read_buf.iter().position(|&num| num == '\n' as u8) {
-                                            read_buf[index] = 0;
-                                            size -= 1;
-                                        }
-                                        if let Some(index) = read_buf.iter().position(|&num| num == '\r' as u8) {
-                                            read_buf[index] = 0;
-                                            size -= 1;
-                                        }
-
-                                        if read_buf.starts_with(b"/nick") {
-                                            if let Some(arg) = read_buf.iter().position(|&num| num == ' ' as u8) {
-                                                let nick = &read_buf[arg + 1..size];
-                                                client.nick = str::from_utf8(nick).unwrap().to_string();
+                    if event.is_readable() {
+                        let msg = match clients.get_mut(&token) {
+                            None => { None }
+                            Some(client) => {
+                                let mut read_buf = [0; 256];
+                                let nread = client.stream.read(&mut read_buf);
+                                match nread {
+                                    Ok(size) if size > 0 => {
+                                        let recv_msg = str::from_utf8(&read_buf[..size]).unwrap();
+                                        let recv_msg = recv_msg.trim();
+                                        if recv_msg.starts_with("/") {
+                                            let parts: Vec<_> = recv_msg.splitn(2, ' ').collect();
+                                            match parts[0] {
+                                                "/nick" if parts.len() > 1 => client.nick = parts[1].to_string(),
+                                                _ => {}
                                             }
+                                            None
+                                        } else {
+                                            let msg = format!("{}> {}\n", client.nick, recv_msg);
+                                            Some(msg)
+                                        }
+                                    }
+                                    Err(ref e) if would_block(e) => {
+                                        None
+                                    }
+                                    _ => {
+                                        println!("Disconnected client(e) fd={}, nick={}", client.stream.as_raw_fd(), client.nick);
+                                        if let Some(mut client) = clients.remove(&token) {
+                                            poll.registry().deregister(&mut client.stream)?;
                                         }
                                         None
-                                    } else {
-                                        let mut msg_vec = format!("{}> ", client.nick).as_bytes().to_vec();
-                                        msg_vec.extend_from_slice(&read_buf[..size]);
+                                    }
+                                }
+                            }
+                        };
 
-                                        Some(msg_vec)
-                                    }
-                                }
-                                Err(ref e) if would_block(e) => {
-                                    None
-                                }
-                                Err(_) => {
-                                    println!("Disconnected client(e) fd={}, nick={}", client.stream.as_raw_fd(), client.nick);
-                                    if let Some(mut client) = clients.remove(&token) {
-                                        poll.registry().deregister(&mut client.stream)?;
-                                    }
-                                    None
+                        match msg {
+                            Some(msg) => {
+                                if let Some(client) = clients.get(&token) {
+                                    send_msg_to_all_clients_but(&clients, &client.stream, msg.as_bytes());
                                 }
                             }
-                        } else {
-                            None
-                        }
-                    } else {
-                        // Sporadic events happen, we can safely ignore them.
-                        None
-                    };
-                    match msg {
-                        None => {}
-                        Some(msg) => {
-                            if let Some(client) = clients.get(&token) {
-                                send_msg_to_all_clients_but(&clients, &client.stream, msg.as_slice());
-                            }
+                            None => {}
                         }
                     }
                 }

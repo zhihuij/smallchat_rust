@@ -1,6 +1,6 @@
 mod chat_lib;
 
-use std::{env, io};
+use std::{env, io, str};
 use std::io::{Read, Write, stdout, Stdout};
 use std::process::exit;
 use std::time::Duration;
@@ -130,12 +130,8 @@ fn main() -> io::Result<()> {
                         let mut read_buf = [0; 256];
                         let nread = server_stream.read(&mut read_buf);
                         match nread {
-                            Ok(0) => {
-                                println!("Disconnected from server");
-                                exit(-1);
-                            }
-                            Ok(size) => {
-                                let msg = String::from_utf8(read_buf[..size].to_vec()).unwrap();
+                            Ok(size) if size > 0 => {
+                                let msg = str::from_utf8(&read_buf[..size]).unwrap();
                                 input_buffer_hide(&mut stdout);
                                 write!(stdout, "{}", msg).unwrap();
                                 // the received only have a '\n', we need '\r'
@@ -145,15 +141,14 @@ fn main() -> io::Result<()> {
                             Err(ref e) if would_block(e) => {
                                 continue;
                             }
-                            Err(_) => {
+                            _ => {
                                 println!("Disconnected from server");
                                 exit(-1);
                             }
                         }
                     }
                 }
-                Token(_) => { // do nothing
-                }
+                _ => { /* do nothing */ }
             }
         }
     }
