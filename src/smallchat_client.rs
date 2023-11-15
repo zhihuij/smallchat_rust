@@ -133,9 +133,8 @@ fn main() -> io::Result<()> {
                             Ok(size) if size > 0 => {
                                 let msg = str::from_utf8(&read_buf[..size]).unwrap();
                                 input_buffer_hide(&mut stdout);
-                                write!(stdout, "{}", msg).unwrap();
-                                // the received only have a '\n', we need '\r'
-                                input_buffer_hide(&mut stdout);
+                                // the received only have a '\n', we need add '\r'
+                                write!(stdout, "{}\r", msg).unwrap();
                                 input_buffer_show(&mut stdout, &input_buffer);
                             }
                             Err(ref e) if would_block(e) => {
